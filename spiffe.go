@@ -42,24 +42,22 @@ func (s SpiffeConfig) GenerateSvid(ctx context.Context) (*jwtsvid.SVID, error) {
 type SpiffeHeadersProvider struct {
 	Config   SpiffeConfig
 	Svid     *jwtsvid.SVID
-	SvidLock sync.RWMutex
+	SvidLock sync.Mutex
 }
 
 func (s *SpiffeHeadersProvider) GetHeaders(ctx context.Context) (map[string]string, error) {
 	var err error
 
-	s.SvidLock.RLock()
+	s.SvidLock.Lock()
 	svid := s.Svid
-	s.SvidLock.RUnlock()
+	defer s.SvidLock.Unlock()
 
 	if svid == nil || time.Now().After(svid.Expiry) {
 		svid, err = s.Config.GenerateSvid(ctx)
 		if err != nil {
 			return nil, err
 		}
-		s.SvidLock.Lock()
 		s.Svid = svid
-		s.SvidLock.Unlock()
 	}
 
 	return map[string]string{"Authorization": "Bearer " + svid.Marshal()}, nil
