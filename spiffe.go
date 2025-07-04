@@ -16,7 +16,7 @@ type SpiffeConfig struct {
 	Audience   string
 }
 
-func (s SpiffeConfig) GenerateSvid(ctx context.Context) (*jwtsvid.SVID, error) {
+func (s *SpiffeConfig) GenerateSvid(ctx context.Context) (*jwtsvid.SVID, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
@@ -50,7 +50,7 @@ func (s *SpiffeHeadersProvider) GetHeaders(ctx context.Context) (map[string]stri
 
 	s.SvidLock.RLock()
 	svid := s.Svid
-	s.SvidLock.RUnlock()
+	defer s.SvidLock.RUnlock()
 
 	if svid == nil || time.Now().After(svid.Expiry) {
 		svid, err = s.Config.GenerateSvid(ctx)
